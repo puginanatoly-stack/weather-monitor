@@ -1,0 +1,41 @@
+name: Daily weather + space-weather check
+
+on:
+  schedule:
+    - cron: "0 3 * * *"  # 03:00 UTC = 09:00 Asia/Omsk
+  workflow_dispatch: {}   # manual "Run workflow" button, for testing
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Pull prior history from the private data repo
+        env:
+          HISTORY_PUSH_TOKEN: ${{ secrets.HISTORY_PUSH_TOKEN }}
+        run: python history_sync.py pull
+
+      - name: Collect data and build the site
+        env:
+          OPENWEATHERMAP_API_KEY: ${{ secrets.OPENWEATHERMAP_API_KEY }}
+          WEATHER_CITY: ${{ secrets.WEATHER_CITY }}
+        run: python build.py
+
+      - name: Push updated history to the private data repo
+        env:
+          HISTORY_PUSH_TOKEN: ${{ secrets.HISTORY_PUSH_TOKEN }}
+        run: python history_sync.py push
+
+      - name: Check alert condition and notify Telegram if not calm
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_MOTION_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_MOTION_CHAT_ID }}
+        run: python notify.py

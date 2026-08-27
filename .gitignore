@@ -1,0 +1,6 @@
+# Never committed to this public repo — see build.py / history_sync.py
+# docstrings for why: this would leak the query city and usage timing.
+data/
+*.html
+__pycache__/
+*.pyc
