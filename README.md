@@ -9,7 +9,7 @@
 ```
 pip install -r requirements.txt
 export OPENWEATHERMAP_API_KEY=...   # openweathermap.org/api, бесплатный тариф
-python build.py "Omsk,RU"           # или любой другой город
+python build.py "Pekin,CH"           # или любой другой город
 ```
 
 Открой `index.html` в браузере.
