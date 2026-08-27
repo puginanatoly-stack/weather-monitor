@@ -34,8 +34,9 @@ jobs:
           HISTORY_PUSH_TOKEN: ${{ secrets.HISTORY_PUSH_TOKEN }}
         run: python history_sync.py push
 
-      - name: Check alert condition and notify Telegram if not calm
+      - name: Notify Telegram (NOTIFY_MODE=always|condition, secret)
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_MOTION_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_MOTION_CHAT_ID }}
+          NOTIFY_MODE: ${{ secrets.NOTIFY_MODE }}
         run: python notify.py
