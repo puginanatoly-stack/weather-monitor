@@ -39,7 +39,7 @@ python build.py "Pekin,CH"           # или любой другой город
 | Секрет | Назначение |
 |---|---|
 | `OPENWEATHERMAP_API_KEY` | ключ погоды |
-| `WEATHER_CITY` | город, например `Omsk,RU` — не хранится в коде |
+| `WEATHER_CITY` | город, например `Pekin,CH` — не хранится в коде |
 | `HISTORY_PUSH_TOKEN` | GitHub PAT с правом записи в приватный репо истории |
 | `TELEGRAM_MOTION_BOT_TOKEN` | токен Telegram-бота для алертов |
 | `TELEGRAM_MOTION_CHAT_ID` | куда слать алерт |
