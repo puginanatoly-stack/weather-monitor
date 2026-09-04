@@ -75,6 +75,66 @@ def level_for(score: float) -> str:
     return "Буря"
 
 
+# Sri Lanka hazard index — deliberately separate from the space-weather blend
+# above (Kp/solar wind/aurora/Schumann are irrelevant to a tropical island):
+# scoped to what's actually relevant there, tropical cyclones and regional
+# earthquakes with tsunami potential. Quake weighted higher — a distant but
+# large quake is a bigger threat to Sri Lanka than a single storm sighting.
+SRI_LANKA_WEIGHTS = {
+    "quake": 0.6,
+    "storm": 0.4,
+}
+
+
+def sl_quake_component(quakes_near: list[dict]) -> float:
+    """Strongest nearby quake's magnitude mapped to 0-100.
+
+    The USGS feed itself only carries M4.5+, so that's the floor (~0), scaling
+    up to 100 at M7.5+ (roughly the class of the 2004 Sumatra quake).
+    """
+    if not quakes_near:
+        return 0.0
+    max_mag = max((q.get("properties", {}).get("mag") or 0) for q in quakes_near)
+    return _clamp01((max_mag - 4.5) / (7.5 - 4.5)) * 100
+
+
+def sl_storm_component(storms_near: list[dict]) -> float:
+    """Step function, not linear — a single active cyclone in the basin is already the signal that matters."""
+    n = len(storms_near)
+    if n == 0:
+        return 0.0
+    if n == 1:
+        return 55.0
+    return 100.0
+
+
+def compute_sri_lanka_index(quakes_near: list[dict], storms_near: list[dict]) -> dict:
+    """Same blend shape as compute_index(), scoped to Sri Lanka-relevant hazards only.
+
+    Returns {"score", "level", "components", "quakes_count", "quakes_max_mag",
+    "nearest_quake_km", "nearest_quake_place", "storms_count"} — quakes_near/
+    storms_near are expected pre-filtered by sources.earthquakes_near/storms_near.
+    """
+    components = {
+        "quake": sl_quake_component(quakes_near),
+        "storm": sl_storm_component(storms_near),
+    }
+    weight_sum = sum(SRI_LANKA_WEIGHTS[k] for k in components)
+    score = sum(SRI_LANKA_WEIGHTS[k] * v for k, v in components.items()) / weight_sum
+    nearest = quakes_near[0] if quakes_near else None
+
+    return {
+        "score": round(score, 1),
+        "level": level_for(score),
+        "components": components,
+        "quakes_count": len(quakes_near),
+        "quakes_max_mag": max((q.get("properties", {}).get("mag") or 0) for q in quakes_near) if quakes_near else None,
+        "nearest_quake_km": nearest.get("distance_km") if nearest else None,
+        "nearest_quake_place": nearest.get("properties", {}).get("place") if nearest else None,
+        "storms_count": len(storms_near),
+    }
+
+
 def compute_index(
     kp: float | None,
     solar_wind_speed: float | None,

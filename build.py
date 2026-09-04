@@ -26,7 +26,17 @@ import composite
 import moon
 import pages
 import templates
-from sources import append_history, collect, read_history
+from sources import (
+    SRI_LANKA_LAT,
+    SRI_LANKA_LON,
+    SRI_LANKA_QUAKE_RADIUS_KM,
+    SRI_LANKA_STORM_RADIUS_KM,
+    append_history,
+    collect,
+    earthquakes_near,
+    read_history,
+    storms_near,
+)
 
 OUT_DIR = Path(__file__).parent
 DATA_DIR = OUT_DIR / "data"
@@ -48,6 +58,10 @@ def build(city: str) -> None:
     avg_volatility = sum(abs_changes) / len(abs_changes) if abs_changes else None
     news_total = data.get("news", {}).get("total_recent")
 
+    sl_quakes = earthquakes_near(data.get("earthquakes", []), SRI_LANKA_LAT, SRI_LANKA_LON, SRI_LANKA_QUAKE_RADIUS_KM)
+    sl_storms = storms_near(data.get("natural_events", []), SRI_LANKA_LAT, SRI_LANKA_LON, SRI_LANKA_STORM_RADIUS_KM)
+    sl_index = composite.compute_sri_lanka_index(sl_quakes, sl_storms)
+
     append_history({
         "ts": datetime.now(timezone.utc).isoformat(),
         "city": city,
@@ -62,6 +76,13 @@ def build(city: str) -> None:
         "quakes_count": len(data.get("earthquakes", [])),
         "news_count": news_total,
         "market_volatility_pct": avg_volatility,
+        "sri_lanka_index_score": sl_index.get("score"),
+        "sri_lanka_index_level": sl_index.get("level"),
+        "sri_lanka_quakes_count": sl_index.get("quakes_count"),
+        "sri_lanka_quakes_max_mag": sl_index.get("quakes_max_mag"),
+        "sri_lanka_nearest_quake_km": sl_index.get("nearest_quake_km"),
+        "sri_lanka_nearest_quake_place": sl_index.get("nearest_quake_place"),
+        "sri_lanka_storms_count": sl_index.get("storms_count"),
     })
     history = read_history()
 
@@ -86,6 +107,13 @@ def build(city: str) -> None:
             "history_sample_size": len(past),
             "history_avg_market_volatility_pct": sum(past_vol) / len(past_vol) if past_vol else None,
             "history_avg_news_count": sum(past_news) / len(past_news) if past_news else None,
+            "sri_lanka_index_score": sl_index.get("score"),
+            "sri_lanka_index_level": sl_index.get("level"),
+            "sri_lanka_quakes_count": sl_index.get("quakes_count"),
+            "sri_lanka_quakes_max_mag": sl_index.get("quakes_max_mag"),
+            "sri_lanka_nearest_quake_km": sl_index.get("nearest_quake_km"),
+            "sri_lanka_nearest_quake_place": sl_index.get("nearest_quake_place"),
+            "sri_lanka_storms_count": sl_index.get("storms_count"),
         }, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )

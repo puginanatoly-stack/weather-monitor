@@ -21,6 +21,7 @@ in collect() once it exists; nothing else needs to change.
 from __future__ import annotations
 
 import json
+import math
 import os
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
@@ -30,6 +31,16 @@ from pathlib import Path
 import requests
 
 DATA_DIR = Path(__file__).parent / "data"
+
+# Sri Lanka hazard tracking — earthquakes/storms filtered from the global
+# EONET/USGS feeds we already fetch, geo-scoped instead of a second city run.
+# Quake radius is generous on purpose: the 2004 tsunami that hit Sri Lanka
+# originated off Sumatra, ~1600 km away, so a tight radius would miss exactly
+# the class of event that matters most here.
+SRI_LANKA_LAT = 7.87
+SRI_LANKA_LON = 80.77
+SRI_LANKA_QUAKE_RADIUS_KM = 2500
+SRI_LANKA_STORM_RADIUS_KM = 1500
 
 OWM_BASE = "https://api.openweathermap.org/data/2.5"
 NOAA_KP_URL = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
@@ -151,10 +162,26 @@ def fetch_schumann() -> dict:
     (nominal/reference values, not live readings) — that flag is passed
     through untouched so the page can say so rather than presenting old
     numbers as current.
+
+    The endpoint itself has gone away before (HTTP 404, not just "stale") —
+    that's a fetch failure, not a data-quality flag, but gets the same
+    `is_ok: False` treatment rather than raising: one source being gone
+    shouldn't take the whole build down, same contract as every other
+    fetch_* here.
     """
-    resp = requests.get(SCHUMANN_URL, timeout=15)
-    resp.raise_for_status()
-    payload = resp.json()
+    try:
+        resp = requests.get(SCHUMANN_URL, timeout=15)
+        resp.raise_for_status()
+        payload = resp.json()
+    except (requests.RequestException, ValueError):
+        return {
+            "updated": None,
+            "is_ok": False,
+            "status_label": "Источник недоступен",
+            "status_tone": "error",
+            "intensity": None,
+            "frequencies": [],
+        }
     status = payload.get("status") or {}
     label = status.get("label", "")
     tone = status.get("tone", "")
@@ -181,6 +208,54 @@ def fetch_significant_earthquakes() -> list[dict]:
     resp = requests.get(USGS_QUAKES_URL, timeout=15)
     resp.raise_for_status()
     return resp.json().get("features", [])
+
+
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    r = 6371.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dlambda / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))
+
+
+def earthquakes_near(earthquakes: list[dict], lat: float, lon: float, radius_km: float) -> list[dict]:
+    """USGS GeoJSON features within radius_km of (lat, lon), nearest first, each tagged with distance_km."""
+    out = []
+    for eq in earthquakes:
+        coords = (eq.get("geometry") or {}).get("coordinates")
+        if not coords or len(coords) < 2:
+            continue
+        eq_lon, eq_lat = coords[0], coords[1]
+        dist = _haversine_km(lat, lon, eq_lat, eq_lon)
+        if dist <= radius_km:
+            tagged = dict(eq)
+            tagged["distance_km"] = round(dist, 1)
+            out.append(tagged)
+    return sorted(out, key=lambda e: e["distance_km"])
+
+
+def storms_near(events: list[dict], lat: float, lon: float, radius_km: float) -> list[dict]:
+    """EONET events categorized as storms, within radius_km — uses each event's most recent tracked position."""
+    out = []
+    for ev in events:
+        categories = ev.get("categories") or ev.get("category") or []
+        is_storm = any("storm" in ((c.get("id", "") + c.get("title", "")).lower()) for c in categories)
+        if not is_storm:
+            continue
+        geometry = ev.get("geometry") or []
+        if not geometry:
+            continue
+        coords = geometry[-1].get("coordinates")
+        if not coords or len(coords) < 2:
+            continue
+        ev_lon, ev_lat = coords[0], coords[1]
+        dist = _haversine_km(lat, lon, ev_lat, ev_lon)
+        if dist <= radius_km:
+            tagged = dict(ev)
+            tagged["distance_km"] = round(dist, 1)
+            out.append(tagged)
+    return sorted(out, key=lambda e: e["distance_km"])
 
 
 def _parse_rss_pubdates(xml_text: str) -> list[datetime]:

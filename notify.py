@@ -17,6 +17,11 @@ Trigger conditions in "condition" mode (any one fires the alert):
      against, so a thin history doesn't produce false positives.
   3. News-feed headline volume > 1.5x the historical average — same
      history-size guard.
+  4. Sri Lanka hazard index level != "Спокойно" (a notable nearby earthquake
+     or an active tropical storm in the basin — see composite.py's
+     compute_sri_lanka_index) — the principal lives there starting this year,
+     flagged separately from the space-weather index above and always shown
+     in the readout regardless of trigger state, not just when it fires.
 
 Usage:
     python notify.py
@@ -66,6 +71,20 @@ def evaluate(summary: dict) -> list[str]:
         if news > avg_news * RELATIVE_THRESHOLD:
             reasons.append(f"НОВОСТНОЙ ШУМ: {news} загол. (норма ~{avg_news:.0f})")
 
+    sl_level = summary.get("sri_lanka_index_level")
+    if sl_level and sl_level != "Спокойно":
+        place = summary.get("sri_lanka_nearest_quake_place")
+        mag = summary.get("sri_lanka_quakes_max_mag")
+        km = summary.get("sri_lanka_nearest_quake_km")
+        storms = summary.get("sri_lanka_storms_count") or 0
+        detail_bits = []
+        if mag is not None and km is not None:
+            detail_bits.append(f"M{mag:.1f} в {km:.0f} км" + (f" ({place})" if place else ""))
+        if storms:
+            detail_bits.append(f"штормов в бассейне: {storms}")
+        detail = ", ".join(detail_bits) if detail_bits else "см. индекс"
+        reasons.append(f"🇱🇰 ШРИ-ЛАНКА: {sl_level} ({summary.get('sri_lanka_index_score')}/100) — {detail}")
+
     return reasons
 
 
@@ -89,7 +108,11 @@ def build_message(summary: dict, reasons: list[str]) -> str:
         f"СОЛНЕЧНЫЙ ВЕТЕР ....... {_fmt(summary.get('solar_wind_speed'), ' км/с')}\n"
         f"ФАЗА ЛУНЫ ............. {summary.get('moon_phase') or 'н/д'}\n"
         f"ЦИФРОВОЙ ШУМ .......... {_fmt(summary.get('news_count'))} загол.\n"
-        f"РЫНОЧНЫЙ ШУМ .......... {_fmt(summary.get('market_volatility_pct'), '%')}"
+        f"РЫНОЧНЫЙ ШУМ .......... {_fmt(summary.get('market_volatility_pct'), '%')}\n"
+        f"---\n"
+        f"🇱🇰 ШРИ-ЛАНКА ИНДЕКС .. {_fmt(summary.get('sri_lanka_index_score'))}/100 [{summary.get('sri_lanka_index_level', '—')}]\n"
+        f"   землетряс. в радиусе  {_fmt(summary.get('sri_lanka_quakes_count'))} (макс. M{_fmt(summary.get('sri_lanka_quakes_max_mag'))})\n"
+        f"   штормов в бассейне .. {_fmt(summary.get('sri_lanka_storms_count'))}"
     )
 
     if reasons:
