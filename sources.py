@@ -41,6 +41,19 @@ SRI_LANKA_LAT = 7.87
 SRI_LANKA_LON = 80.77
 SRI_LANKA_QUAKE_RADIUS_KM = 2500
 SRI_LANKA_STORM_RADIUS_KM = 1500
+# USGS's "significant" feed is a rolling 30-day window — without an age cutoff
+# a single old quake sits in range and produces an identical score for weeks
+# until it ages out (found 2026-09-08: a M6.9 from Aug 15 was still driving
+# an unchanged "Активно" reading three weeks later). Only count quakes from
+# the last N days so the index tracks what's actually current.
+SRI_LANKA_QUAKE_MAX_AGE_DAYS = 3
+
+# Ground conditions (air/water temp, wind) — Colombo, a coastal point.
+# Deliberately NOT the same as SRI_LANKA_LAT/LON above: that pair is the
+# island's geometric center (inland, hill country near Kandy), fine for a
+# 2500 km hazard-radius search but useless for sea-surface temperature.
+SRI_LANKA_COASTAL_LAT = 6.9271
+SRI_LANKA_COASTAL_LON = 79.8612
 
 OWM_BASE = "https://api.openweathermap.org/data/2.5"
 NOAA_KP_URL = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
@@ -49,6 +62,8 @@ NOAA_AURORA_URL = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.jso
 SCHUMANN_URL = "https://schumannresonancelive.com/api/data.php?lang=en"
 NASA_EONET_URL = "https://eonet.gsfc.nasa.gov/api/v3/events"
 USGS_QUAKES_URL = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_month.geojson"
+OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
+OPEN_METEO_MARINE_URL = "https://marine-api.open-meteo.com/v1/marine"
 
 # "Digital noise" proxy for the events no clean structured API exists for
 # (unrest, mass incidents, ...): not classifying WHAT is happening, just
@@ -210,6 +225,55 @@ def fetch_significant_earthquakes() -> list[dict]:
     return resp.json().get("features", [])
 
 
+def fetch_sri_lanka_weather(lat: float = SRI_LANKA_COASTAL_LAT, lon: float = SRI_LANKA_COASTAL_LON) -> dict:
+    """Air temperature + wind speed at a Sri Lanka coastal point (Open-Meteo). No key.
+
+    Same soft-failure contract as the other fetch_* here: a network hiccup or
+    upstream error returns is_ok: False with None values rather than raising.
+    """
+    try:
+        resp = requests.get(
+            OPEN_METEO_FORECAST_URL,
+            params={
+                "latitude": lat,
+                "longitude": lon,
+                "current": "temperature_2m,wind_speed_10m",
+                "wind_speed_unit": "ms",
+                "timezone": "auto",
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        current = resp.json().get("current", {})
+        return {
+            "is_ok": True,
+            "air_temp_c": current.get("temperature_2m"),
+            "wind_speed_ms": current.get("wind_speed_10m"),
+        }
+    except (requests.RequestException, ValueError):
+        return {"is_ok": False, "air_temp_c": None, "wind_speed_ms": None}
+
+
+def fetch_sri_lanka_marine(lat: float = SRI_LANKA_COASTAL_LAT, lon: float = SRI_LANKA_COASTAL_LON) -> dict:
+    """Sea surface temperature near Sri Lanka (Open-Meteo Marine). No key."""
+    try:
+        resp = requests.get(
+            OPEN_METEO_MARINE_URL,
+            params={
+                "latitude": lat,
+                "longitude": lon,
+                "current": "sea_surface_temperature",
+                "timezone": "auto",
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        current = resp.json().get("current", {})
+        return {"is_ok": True, "water_temp_c": current.get("sea_surface_temperature")}
+    except (requests.RequestException, ValueError):
+        return {"is_ok": False, "water_temp_c": None}
+
+
 def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     r = 6371.0
     p1, p2 = math.radians(lat1), math.radians(lat2)
@@ -219,13 +283,33 @@ def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 2 * r * math.asin(math.sqrt(a))
 
 
-def earthquakes_near(earthquakes: list[dict], lat: float, lon: float, radius_km: float) -> list[dict]:
-    """USGS GeoJSON features within radius_km of (lat, lon), nearest first, each tagged with distance_km."""
+def earthquakes_near(
+    earthquakes: list[dict],
+    lat: float,
+    lon: float,
+    radius_km: float,
+    max_age_days: float | None = None,
+) -> list[dict]:
+    """USGS GeoJSON features within radius_km of (lat, lon), nearest first, each tagged with distance_km.
+
+    max_age_days, if given, drops quakes older than that (by `properties.time`,
+    epoch ms) — without it, USGS's rolling monthly feed keeps an old quake in
+    range for up to 30 days, producing an unchanged reading long after the
+    event stopped being current.
+    """
+    now = datetime.now(timezone.utc)
     out = []
     for eq in earthquakes:
         coords = (eq.get("geometry") or {}).get("coordinates")
         if not coords or len(coords) < 2:
             continue
+        if max_age_days is not None:
+            time_ms = (eq.get("properties") or {}).get("time")
+            if time_ms is None:
+                continue
+            age = now - datetime.fromtimestamp(time_ms / 1000, tz=timezone.utc)
+            if age > timedelta(days=max_age_days):
+                continue
         eq_lon, eq_lat = coords[0], coords[1]
         dist = _haversine_km(lat, lon, eq_lat, eq_lon)
         if dist <= radius_km:

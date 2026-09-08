@@ -4,11 +4,12 @@ the loop — runs as a plain GitHub Actions step reading secrets, exactly the
 pattern already proven for this account's daily family broadcast.
 
 NOTIFY_MODE (repo secret, optional):
-  "always"    — send every run, whether calm or not (for tuning the message
-                style; this is the current default while the text is being
-                reviewed — see module history / the principal's own request).
-  "condition" — only send when a trigger fires (see evaluate()). Falls back
-                to this if NOTIFY_MODE is unset or any other value.
+  "always"    — send every run, whether calm or not. This is the settled
+                default (the principal's own decision, 2026-09-08: wants a
+                daily readout regardless of trigger state) — falls back to
+                this if NOTIFY_MODE is unset.
+  "condition" — only send when a trigger fires (see evaluate()). Must be set
+                explicitly; there is no automatic fallback to this mode.
 
 Trigger conditions in "condition" mode (any one fires the alert):
   1. Integral index level != "Спокойно" (geomagnetic/solar activity elevated).
@@ -112,7 +113,10 @@ def build_message(summary: dict, reasons: list[str]) -> str:
         f"---\n"
         f"🇱🇰 ШРИ-ЛАНКА ИНДЕКС .. {_fmt(summary.get('sri_lanka_index_score'))}/100 [{summary.get('sri_lanka_index_level', '—')}]\n"
         f"   землетряс. в радиусе  {_fmt(summary.get('sri_lanka_quakes_count'))} (макс. M{_fmt(summary.get('sri_lanka_quakes_max_mag'))})\n"
-        f"   штормов в бассейне .. {_fmt(summary.get('sri_lanka_storms_count'))}"
+        f"   штормов в бассейне .. {_fmt(summary.get('sri_lanka_storms_count'))}\n"
+        f"   темп. воздуха ........ {_fmt(summary.get('sri_lanka_air_temp_c'), '°C')}\n"
+        f"   темп. воды ........... {_fmt(summary.get('sri_lanka_water_temp_c'), '°C')}\n"
+        f"   ветер ................ {_fmt(summary.get('sri_lanka_wind_speed_ms'), ' м/с')}"
     )
 
     if reasons:
@@ -145,7 +149,7 @@ def main() -> None:
         return
 
     reasons = evaluate(summary)
-    mode = os.environ.get("NOTIFY_MODE", "condition").strip().lower()
+    mode = os.environ.get("NOTIFY_MODE", "always").strip().lower()
     should_send = mode == "always" or bool(reasons)
 
     print(f"mode={mode} reasons={reasons or 'none'} should_send={should_send}")

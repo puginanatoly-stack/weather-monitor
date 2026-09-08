@@ -87,10 +87,15 @@ SRI_LANKA_WEIGHTS = {
 
 
 def sl_quake_component(quakes_near: list[dict]) -> float:
-    """Strongest nearby quake's magnitude mapped to 0-100.
+    """Strongest nearby *recent* quake's magnitude mapped to 0-100.
 
-    The USGS feed itself only carries M4.5+, so that's the floor (~0), scaling
-    up to 100 at M7.5+ (roughly the class of the 2004 Sumatra quake).
+    `quakes_near` is expected pre-filtered by sources.earthquakes_near()'s
+    max_age_days (see SRI_LANKA_QUAKE_MAX_AGE_DAYS) — without that filter a
+    single old quake sits in USGS's 30-day window and produces an unchanged
+    score for weeks. M4.5 is used as the floor (~0) purely as a scoring
+    anchor, scaling up to 100 at M7.5+ (roughly the class of the 2004 Sumatra
+    quake) — the actual USGS feed queried is the curated "significant" one,
+    which in practice only carries larger/notable events anyway.
     """
     if not quakes_near:
         return 0.0

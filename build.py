@@ -29,11 +29,14 @@ import templates
 from sources import (
     SRI_LANKA_LAT,
     SRI_LANKA_LON,
+    SRI_LANKA_QUAKE_MAX_AGE_DAYS,
     SRI_LANKA_QUAKE_RADIUS_KM,
     SRI_LANKA_STORM_RADIUS_KM,
     append_history,
     collect,
     earthquakes_near,
+    fetch_sri_lanka_marine,
+    fetch_sri_lanka_weather,
     read_history,
     storms_near,
 )
@@ -58,9 +61,15 @@ def build(city: str) -> None:
     avg_volatility = sum(abs_changes) / len(abs_changes) if abs_changes else None
     news_total = data.get("news", {}).get("total_recent")
 
-    sl_quakes = earthquakes_near(data.get("earthquakes", []), SRI_LANKA_LAT, SRI_LANKA_LON, SRI_LANKA_QUAKE_RADIUS_KM)
+    sl_quakes = earthquakes_near(
+        data.get("earthquakes", []), SRI_LANKA_LAT, SRI_LANKA_LON, SRI_LANKA_QUAKE_RADIUS_KM,
+        max_age_days=SRI_LANKA_QUAKE_MAX_AGE_DAYS,
+    )
     sl_storms = storms_near(data.get("natural_events", []), SRI_LANKA_LAT, SRI_LANKA_LON, SRI_LANKA_STORM_RADIUS_KM)
     sl_index = composite.compute_sri_lanka_index(sl_quakes, sl_storms)
+
+    sl_weather = fetch_sri_lanka_weather()
+    sl_marine = fetch_sri_lanka_marine()
 
     append_history({
         "ts": datetime.now(timezone.utc).isoformat(),
@@ -83,6 +92,9 @@ def build(city: str) -> None:
         "sri_lanka_nearest_quake_km": sl_index.get("nearest_quake_km"),
         "sri_lanka_nearest_quake_place": sl_index.get("nearest_quake_place"),
         "sri_lanka_storms_count": sl_index.get("storms_count"),
+        "sri_lanka_air_temp_c": sl_weather.get("air_temp_c"),
+        "sri_lanka_wind_speed_ms": sl_weather.get("wind_speed_ms"),
+        "sri_lanka_water_temp_c": sl_marine.get("water_temp_c"),
     })
     history = read_history()
 
@@ -114,6 +126,9 @@ def build(city: str) -> None:
             "sri_lanka_nearest_quake_km": sl_index.get("nearest_quake_km"),
             "sri_lanka_nearest_quake_place": sl_index.get("nearest_quake_place"),
             "sri_lanka_storms_count": sl_index.get("storms_count"),
+            "sri_lanka_air_temp_c": sl_weather.get("air_temp_c"),
+            "sri_lanka_wind_speed_ms": sl_weather.get("wind_speed_ms"),
+            "sri_lanka_water_temp_c": sl_marine.get("water_temp_c"),
         }, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
