@@ -3,6 +3,8 @@
 One dashboard that answers a single question — **"is today calm, or not?"** — by blending weather, geomagnetic activity, earthquakes/wildfires, news volume, and market volatility into one integral index. [**Live demo →**](https://puginanatoly-stack.github.io/weather-monitor/) (neutral placeholder city, no history)
 
 [![Live demo](https://img.shields.io/badge/demo-live-2f7a4f?style=flat-square)](https://puginanatoly-stack.github.io/weather-monitor/)
+[![Deploy Pages](https://github.com/puginanatoly-stack/weather-monitor/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/puginanatoly-stack/weather-monitor/actions/workflows/deploy-pages.yml)
+[![Daily check](https://github.com/puginanatoly-stack/weather-monitor/actions/workflows/daily-check.yml/badge.svg)](https://github.com/puginanatoly-stack/weather-monitor/actions/workflows/daily-check.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 
 Русская версия: [README.ru.md](README.ru.md)
@@ -32,7 +34,7 @@ The scoring/filtering logic isn't tied to Sri Lanka specifically — swapping th
 ```bash
 pip install -r requirements.txt
 export OPENWEATHERMAP_API_KEY=...   # openweathermap.org/api, free tier
-python build.py "London,GB"          # or any other city
+python build.py "London,GB"          # or any other city — no args builds the same placeholder demo published on Pages
 ```
 
 Open the generated `index.html` in a browser.

@@ -3,6 +3,8 @@
 Один дашборд, который отвечает на вопрос «сегодня всё спокойно или нет?» — погода, магнитные бури, землетрясения, новостной фон и рынки в одном интегральном индексе. [**Живое демо →**](https://puginanatoly-stack.github.io/weather-monitor/) (нейтральный город-плейсхолдер, без истории)
 
 [![Live demo](https://img.shields.io/badge/demo-live-2f7a4f?style=flat-square)](https://puginanatoly-stack.github.io/weather-monitor/)
+[![Deploy Pages](https://github.com/puginanatoly-stack/weather-monitor/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/puginanatoly-stack/weather-monitor/actions/workflows/deploy-pages.yml)
+[![Daily check](https://github.com/puginanatoly-stack/weather-monitor/actions/workflows/daily-check.yml/badge.svg)](https://github.com/puginanatoly-stack/weather-monitor/actions/workflows/daily-check.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 
 English version: [README.md](README.md)
@@ -32,7 +34,7 @@ English version: [README.md](README.md)
 ```bash
 pip install -r requirements.txt
 export OPENWEATHERMAP_API_KEY=...   # openweathermap.org/api, бесплатный тариф
-python build.py "Pekin,CH"           # или любой другой город
+python build.py "Pekin,CH"           # или любой другой город — без аргументов соберётся тот же демо-плейсхолдер, что опубликован на Pages
 ```
 
 Открой `index.html` в браузере.
