@@ -54,6 +54,61 @@ Open the generated `index.html` in a browser.
 
 ## How the automation works (`.github/workflows/daily-check.yml`)
 
+```mermaid
+flowchart TD
+    subgraph SRC["Data sources (all keyless except OpenWeatherMap)"]
+        OWM["OpenWeatherMap"]
+        NOAA["NOAA SWPC<br/>Kp/Ap, solar wind, aurora"]
+        SCHU["Schumann Resonance Live"]
+        EONET["NASA EONET<br/>storms/wildfires/ice"]
+        USGS["USGS<br/>earthquakes"]
+        OM["Open-Meteo / Marine<br/>coastal air+sea+wind"]
+        RSS["BBC / Google News /<br/>Al Jazeera / RIA (RSS)"]
+        YF["Yahoo Finance chart API"]
+    end
+
+    subgraph GHA["GitHub Actions — daily-check.yml (cron, once a day)"]
+        SRCPY["sources.py<br/>collect()"]
+        MOON["moon.py<br/>phase, no API"]
+        COMP["composite.py<br/>integral index +<br/>coastal-hazard index"]
+        BUILD["build.py"]
+        RENDER["templates.py + pages.py + charts.py<br/>→ 4 HTML files"]
+        SUMMARY[("data/latest_summary.json<br/>data/history.jsonl")]
+        NOTIFY["notify.py<br/>evaluate() trigger conditions"]
+
+        SRCPY --> COMP
+        COMP --> BUILD
+        MOON --> BUILD
+        BUILD --> RENDER
+        BUILD --> SUMMARY
+        SUMMARY --> NOTIFY
+    end
+
+    PRIVREPO[("Private history repo<br/>(not this repo)")]
+    TG["Telegram Bot API<br/>sendMessage"]
+    CHAT(["Your Telegram chat"])
+    DISCARD["discarded — never committed<br/>(.gitignore *.html)"]
+
+    OWM --> SRCPY
+    NOAA --> SRCPY
+    SCHU --> SRCPY
+    EONET --> SRCPY
+    USGS --> SRCPY
+    OM --> SRCPY
+    RSS --> SRCPY
+    YF --> SRCPY
+
+    PRIVREPO -- "history_sync.py pull<br/>(before build)" --> SRCPY
+    SUMMARY -- "history_sync.py push<br/>(after build)" --> PRIVREPO
+
+    RENDER -.-> DISCARD
+
+    NOTIFY -- "NOTIFY_MODE=always,<br/>or a trigger fired" --> TG
+    TG --> CHAT
+```
+
+Trigger conditions notify.py checks in `NOTIFY_MODE=condition` (any one fires the alert; in the default `always` mode it sends every run regardless): integral index ≠ "Calm" · market volatility or news-headline volume >1.5× its historical average (only once enough history has accumulated) · coastal-hazard index ≠ "Calm". The coastal-hazard block is always included in the message body, whether or not it was the thing that fired.
+
 This repository is public and holds only code — neither the real city nor the run history is committed here (see `.gitignore` and the docstrings in `build.py`/`history_sync.py`): a public git history growing on a schedule would quietly leak geolocation and usage patterns. So:
 
 1. **History** (`data/history.jsonl`) is synced with a separate private repo via `history_sync.py` (pull before build, push after) — never written to this public repo.

@@ -54,6 +54,61 @@ python build.py "Pekin,CH"           # или любой другой город
 
 ## Как устроена автоматизация (`.github/workflows/daily-check.yml`)
 
+```mermaid
+flowchart TD
+    subgraph SRC["Источники данных (все без ключа, кроме OpenWeatherMap)"]
+        OWM["OpenWeatherMap"]
+        NOAA["NOAA SWPC<br/>Kp/Ap, солнечный ветер, аврора"]
+        SCHU["Schumann Resonance Live"]
+        EONET["NASA EONET<br/>штормы/пожары/лёд"]
+        USGS["USGS<br/>землетрясения"]
+        OM["Open-Meteo / Marine<br/>воздух+вода+ветер побережья"]
+        RSS["BBC / Google News /<br/>Al Jazeera / RIA (RSS)"]
+        YF["Yahoo Finance chart API"]
+    end
+
+    subgraph GHA["GitHub Actions — daily-check.yml (cron, раз в сутки)"]
+        SRCPY["sources.py<br/>collect()"]
+        MOON["moon.py<br/>фаза, без API"]
+        COMP["composite.py<br/>интегральный индекс +<br/>индекс опасности побережья"]
+        BUILD["build.py"]
+        RENDER["templates.py + pages.py + charts.py<br/>→ 4 HTML-файла"]
+        SUMMARY[("data/latest_summary.json<br/>data/history.jsonl")]
+        NOTIFY["notify.py<br/>evaluate() — проверка триггеров"]
+
+        SRCPY --> COMP
+        COMP --> BUILD
+        MOON --> BUILD
+        BUILD --> RENDER
+        BUILD --> SUMMARY
+        SUMMARY --> NOTIFY
+    end
+
+    PRIVREPO[("Приватный репо истории<br/>(не этот репозиторий)")]
+    TG["Telegram Bot API<br/>sendMessage"]
+    CHAT(["Твой чат в Telegram"])
+    DISCARD["выбрасывается — не коммитится<br/>(.gitignore *.html)"]
+
+    OWM --> SRCPY
+    NOAA --> SRCPY
+    SCHU --> SRCPY
+    EONET --> SRCPY
+    USGS --> SRCPY
+    OM --> SRCPY
+    RSS --> SRCPY
+    YF --> SRCPY
+
+    PRIVREPO -- "history_sync.py pull<br/>(перед сборкой)" --> SRCPY
+    SUMMARY -- "history_sync.py push<br/>(после сборки)" --> PRIVREPO
+
+    RENDER -.-> DISCARD
+
+    NOTIFY -- "NOTIFY_MODE=always,<br/>либо сработал триггер" --> TG
+    TG --> CHAT
+```
+
+Условия триггера, которые проверяет notify.py в режиме `NOTIFY_MODE=condition` (срабатывает любое одно; в дефолтном `always` уходит каждый прогон независимо): интегральный индекс ≠ «Спокойно» · рыночная волатильность или новостной шум >1.5× исторического среднего (только когда истории накопилось достаточно) · индекс опасности побережья ≠ «Спокойно». Блок опасности побережья всегда включён в тело сообщения, независимо от того, был ли именно он причиной срабатывания.
+
 Этот репозиторий публичный и хранит только код — ни город, ни история запусков сюда не коммитятся (см. `.gitignore` и docstring в `build.py`/`history_sync.py`): публичная git-история, растущая по расписанию, тихо палила бы геолокацию и паттерн активности. Поэтому:
 
 1. **История** (`data/history.jsonl`) синхронизируется с отдельным приватным репозиторием через `history_sync.py` (pull перед сборкой, push после) — сюда, в публичный репо, она не пишется.
