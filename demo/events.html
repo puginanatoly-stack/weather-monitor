@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>События — Погода и космос</title>
+<style>
+  :root {
+    --ink:#241f1a; --ink-soft:#6b5f52; --paper:#f6f2ea; --surface:#ffffff;
+    --line:#e3dccd; --calm:#4f7a5c; --active:#c98a3e; --storm:#b6472f;
+    --accent:#8a5a2e; --accent2:#3d6e63; --accent3:#a67c4e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink:#efe9df; --ink-soft:#b5a999; --paper:#1c1712; --surface:#26201a;
+      --line:#3c3327; --calm:#7fae8c; --active:#e0a862; --storm:#e0745a;
+      --accent:#c39566; --accent2:#7fb0a3; --accent3:#c9a374;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink); font-family: -apple-system, "Segoe UI", Roboto, sans-serif; line-height:1.5; }
+  .page { max-width: 900px; margin: 0 auto; padding: 0 20px 64px; }
+  nav.tabs { display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:28px; padding-top:20px; overflow-x:auto; }
+  nav.tabs a { padding:10px 16px; text-decoration:none; color:var(--ink-soft); font-size:.92rem; font-weight:600; border-bottom:2px solid transparent; white-space:nowrap; }
+  nav.tabs a.active { color:var(--ink); border-bottom-color:var(--accent); }
+  nav.tabs a:hover { color:var(--ink); }
+  h1 { font-size: 1.5rem; margin: 8px 0 4px; font-weight: 700; }
+  .meta { color: var(--ink-soft); font-size: .85rem; margin-bottom: 24px; }
+  .hero { display:flex; gap:32px; align-items:center; flex-wrap:wrap; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:24px 28px; margin-bottom:28px; }
+  .ring-bg { stroke: var(--line); }
+  .ring-center-label { font-size: 20px; font-weight: 800; fill: var(--ink); letter-spacing: .04em; }
+  .ring-center-sub { font-size: 13px; fill: var(--ink-soft); }
+  .ring-legend { display:flex; flex-direction:column; gap:8px; font-size:.92rem; }
+  .ring-legend-item { display:flex; align-items:center; gap:8px; }
+  .ring-legend .dot { width:10px; height:10px; border-radius:50%; display:inline-block; flex-shrink:0; }
+  .badges { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+  .badge { display:inline-flex; align-items:center; font-size:.78rem; font-weight:600; padding:5px 12px; border-radius:20px; }
+  .badge-calm { background:color-mix(in srgb, var(--calm) 18%, transparent); color:var(--calm); }
+  .badge-active { background:color-mix(in srgb, var(--active) 20%, transparent); color:var(--active); }
+  .badge-storm { background:color-mix(in srgb, var(--storm) 20%, transparent); color:var(--storm); }
+  .cards { display:grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:28px; }
+  .card { background:var(--surface); padding:14px 16px; }
+  .card .n { font-size:1.3rem; font-weight:700; }
+  .card .cap { font-size:.76rem; color:var(--ink-soft); margin-top:4px; }
+  section { margin: 32px 0; }
+  section h2 { font-size:1.05rem; margin-bottom:10px; font-weight:700; }
+  .panel { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:16px 18px; overflow-x:auto; }
+  .grid { stroke: var(--line); }
+  .axis { fill: var(--ink-soft); }
+  .bar-ok { fill: var(--calm); }
+  .bar-storm { fill: var(--storm); }
+  .threshold { stroke: var(--storm); stroke-dasharray: 4 3; }
+  .threshold-label { fill: var(--storm); }
+  .sources { display:flex; flex-direction:column; gap:10px; }
+  .source-row { display:flex; justify-content:space-between; gap:10px; font-size:.88rem; padding:8px 0; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .source-row:last-child { border-bottom:none; }
+  .source-row a { color:var(--accent); text-decoration:none; }
+  .source-row a:hover { text-decoration:underline; }
+  .source-row .status { color:var(--ink-soft); font-size:.82rem; }
+  footer { margin-top:40px; font-size:.76rem; color:var(--ink-soft); }
+</style>
+</head>
+<body>
+<div class="page">
+  <nav class="tabs"><a href="index.html" class="">Сейчас</a><a href="space-weather.html" class="">Космическая погода</a><a href="moon.html" class="">Луна</a><a href="events.html" class="active">События</a></nav>
+  
+  <h1>События</h1>
+  <div class="meta">Обновлено: 2026-09-16 06:55</div>
+
+  <div class="cards">
+    <div class="card"><div class="n">35</div><div class="cap">открытых природных событий (NASA EONET)</div></div>
+    <div class="card"><div class="n">8</div><div class="cap">значимых землетрясений за месяц (USGS)</div></div>
+    <div class="card"><div class="n">48</div><div class="cap">заголовков за 3ч (digital noise)</div></div>
+    <div class="card"><div class="n">0.84%</div><div class="cap">средняя волатильность рынков</div></div>
+    <div class="card"><div class="n">Растущий серп</div><div class="cap">фаза Луны сейчас</div></div>
+    <div class="card"><div class="n">Активно</div><div class="cap">интегральный индекс сейчас</div></div>
+  </div>
+
+  <section>
+    <h2>Природные события — по дням (~20 дней, NASA EONET)</h2>
+    <div class="panel"><svg viewBox="0 0 700 200" width="100%" style="max-width:700px"><line x1="45" y1="175" x2="690" y2="175" class="grid"/><line x1="45" y1="-22857142682.1" x2="690" y2="-22857142682.1" class="threshold"/><text x="41" y="-22857142679.1" font-size="9" text-anchor="end" class="threshold-label">буря</text><rect x="45.0" y="83.6" width="34.7" height="91.4" class="bar-ok"/><rect x="94.6" y="152.1" width="34.7" height="22.9" class="bar-ok"/><rect x="144.2" y="83.6" width="34.7" height="91.4" class="bar-ok"/><rect x="193.8" y="106.4" width="34.7" height="68.6" class="bar-ok"/><rect x="243.5" y="129.3" width="34.7" height="45.7" class="bar-ok"/><rect x="293.1" y="129.3" width="34.7" height="45.7" class="bar-ok"/><rect x="342.7" y="129.3" width="34.7" height="45.7" class="bar-ok"/><rect x="392.3" y="83.6" width="34.7" height="91.4" class="bar-ok"/><rect x="441.9" y="152.1" width="34.7" height="22.9" class="bar-ok"/><rect x="491.5" y="106.4" width="34.7" height="68.6" class="bar-ok"/><rect x="541.2" y="15.0" width="34.7" height="160.0" class="bar-ok"/><rect x="590.8" y="152.1" width="34.7" height="22.9" class="bar-ok"/><rect x="640.4" y="152.1" width="34.7" height="22.9" class="bar-ok"/><text x="62.4" y="194" font-size="10" text-anchor="middle" class="axis">08-27</text><text x="112.0" y="194" font-size="10" text-anchor="middle" class="axis">08-28</text><text x="161.6" y="194" font-size="10" text-anchor="middle" class="axis">08-29</text><text x="211.2" y="194" font-size="10" text-anchor="middle" class="axis">08-30</text><text x="260.8" y="194" font-size="10" text-anchor="middle" class="axis">08-31</text><text x="310.4" y="194" font-size="10" text-anchor="middle" class="axis">09-02</text><text x="360.1" y="194" font-size="10" text-anchor="middle" class="axis">09-03</text><text x="409.7" y="194" font-size="10" text-anchor="middle" class="axis">09-04</text><text x="459.3" y="194" font-size="10" text-anchor="middle" class="axis">09-07</text><text x="508.9" y="194" font-size="10" text-anchor="middle" class="axis">09-08</text><text x="558.5" y="194" font-size="10" text-anchor="middle" class="axis">09-10</text><text x="608.1" y="194" font-size="10" text-anchor="middle" class="axis">09-11</text><text x="657.8" y="194" font-size="10" text-anchor="middle" class="axis">09-15</text></svg></div>
+  </section>
+
+  <section>
+    <h2>Значимые землетрясения — по дням (~30 дней, USGS)</h2>
+    <div class="panel"><svg viewBox="0 0 700 200" width="100%" style="max-width:700px"><line x1="45" y1="175" x2="690" y2="175" class="grid"/><line x1="45" y1="-79999999825.0" x2="690" y2="-79999999825.0" class="threshold"/><text x="41" y="-79999999822.0" font-size="9" text-anchor="end" class="threshold-label">буря</text><rect x="45.0" y="95.0" width="64.5" height="80.0" class="bar-ok"/><rect x="137.1" y="95.0" width="64.5" height="80.0" class="bar-ok"/><rect x="229.3" y="95.0" width="64.5" height="80.0" class="bar-ok"/><rect x="321.4" y="95.0" width="64.5" height="80.0" class="bar-ok"/><rect x="413.6" y="15.0" width="64.5" height="160.0" class="bar-ok"/><rect x="505.7" y="95.0" width="64.5" height="80.0" class="bar-ok"/><rect x="597.9" y="95.0" width="64.5" height="80.0" class="bar-ok"/><text x="77.2" y="194" font-size="10" text-anchor="middle" class="axis">08-21</text><text x="169.4" y="194" font-size="10" text-anchor="middle" class="axis">08-22</text><text x="261.5" y="194" font-size="10" text-anchor="middle" class="axis">08-25</text><text x="353.7" y="194" font-size="10" text-anchor="middle" class="axis">08-26</text><text x="445.8" y="194" font-size="10" text-anchor="middle" class="axis">09-03</text><text x="538.0" y="194" font-size="10" text-anchor="middle" class="axis">09-05</text><text x="630.1" y="194" font-size="10" text-anchor="middle" class="axis">09-12</text></svg></div>
+  </section>
+
+  <section>
+    <h2>Последние природные события</h2>
+    <div class="panel sources"><div class="source-row"><a href="https://eonet.gsfc.nasa.gov/api/v3/events/EONET_24184" target="_blank" rel="noopener">Cyclone Norbert</a><span class="status">Severe Storms · 2026-09-15</span></div><div class="source-row"><a href="https://eonet.gsfc.nasa.gov/api/v3/events/EONET_12618" target="_blank" rel="noopener">Iceberg A84</a><span class="status">Sea and Lake Ice · 2026-09-10</span></div><div class="source-row"><a href="https://eonet.gsfc.nasa.gov/api/v3/events/EONET_24189" target="_blank" rel="noopener">Wildfire MEERS, Comanche, Oklahoma</a><span class="status">Wildfires · 2026-09-08</span></div><div class="source-row"><a href="https://eonet.gsfc.nasa.gov/api/v3/events/EONET_24185" target="_blank" rel="noopener">Wildfire Kurk, San Saba, Texas</a><span class="status">Wildfires · 2026-09-08</span></div><div class="source-row"><a href="https://eonet.gsfc.nasa.gov/api/v3/events/EONET_24192" target="_blank" rel="noopener">Wildfire PINTO, Stephens, Oklahoma</a><span class="status">Wildfires · 2026-09-08</span></div><div class="source-row"><a href="https://eonet.gsfc.nasa.gov/api/v3/events/EONET_24187" target="_blank" rel="noopener">Wildfire Moonshine, Albany, Wyoming</a><span class="status">Wildfires · 2026-09-07</span></div><div class="source-row"><a href="https://eonet.gsfc.nasa.gov/api/v3/events/EONET_24100" target="_blank" rel="noopener">Wildfire S7, Broward, Florida</a><span class="status">Wildfires · 2026-09-04</span></div><div class="source-row"><a href="https://eonet.gsfc.nasa.gov/api/v3/events/EONET_24096" target="_blank" rel="noopener">Wildfire Needles, Oglala Lakota, South Dakota</a><span class="status">Wildfires · 2026-09-04</span></div><div class="source-row"><a href="https://eonet.gsfc.nasa.gov/api/v3/events/EONET_24095" target="_blank" rel="noopener">Incident Complex Rattlesnake Complex, Prairie, Montana</a><span class="status">Wildfires · 2026-09-04</span></div><div class="source-row"><a href="https://eonet.gsfc.nasa.gov/api/v3/events/EONET_2736" target="_blank" rel="noopener">Iceberg B22A</a><span class="status">Sea and Lake Ice · 2026-09-10</span></div></div>
+  </section>
+
+  <section>
+    <h2>Последние значимые землетрясения</h2>
+    <div class="panel sources"><div class="source-row"><a href="https://earthquake.usgs.gov/earthquakes/eventpage/us7000tgrk" target="_blank" rel="noopener">M 6.5 - 126 km NNE of Teluknaga, Indonesia</a><span class="status">alert: green · 2026-09-12</span></div><div class="source-row"><a href="https://earthquake.usgs.gov/earthquakes/eventpage/uw714095342" target="_blank" rel="noopener">M 3.8 - 20 km E of Castle Rock, Washington</a><span class="status">alert: — · 2026-09-05</span></div><div class="source-row"><a href="https://earthquake.usgs.gov/earthquakes/eventpage/us7000tdw6" target="_blank" rel="noopener">M 5.4 - 21 km WNW of Jiangyou, China</a><span class="status">alert: yellow · 2026-09-03</span></div><div class="source-row"><a href="https://earthquake.usgs.gov/earthquakes/eventpage/us7000tdvt" target="_blank" rel="noopener">M 6.3 - 84 km SSW of Nikolski, Alaska</a><span class="status">alert: green · 2026-09-03</span></div><div class="source-row"><a href="https://earthquake.usgs.gov/earthquakes/eventpage/us7000tbwb" target="_blank" rel="noopener">M 5.2 Landslide - 55 km NW of Kodāri̇̄, Nepal</a><span class="status">alert: — · 2026-08-26</span></div><div class="source-row"><a href="https://earthquake.usgs.gov/earthquakes/eventpage/us6000tna9" target="_blank" rel="noopener">M 4.9 - 4 km NNE of Jalālābād, Afghanistan</a><span class="status">alert: yellow · 2026-08-25</span></div><div class="source-row"><a href="https://earthquake.usgs.gov/earthquakes/eventpage/us6000tmta" target="_blank" rel="noopener">M 5.8 - 5 km E of Ushiku, Japan</a><span class="status">alert: green · 2026-08-22</span></div><div class="source-row"><a href="https://earthquake.usgs.gov/earthquakes/eventpage/us6000tm81" target="_blank" rel="noopener">M 6.7 - 38 km NE of Tambo, Peru</a><span class="status">alert: green · 2026-08-21</span></div></div>
+  </section>
+
+  <section>
+    <h2>Цифровой шум — заголовки за 3ч</h2>
+    <p style="margin:0 0 10px;color:var(--ink-soft);font-size:.9rem">Косвенный индикатор: не что случилось, а сколько вообще публикуется. пока не с чем сравнивать — первый запуск.</p>
+    <div class="panel sources"><div class="source-row"><span>BBC World</span><span class="status">1</span></div><div class="source-row"><span>Google News</span><span class="status">10</span></div><div class="source-row"><span>Al Jazeera</span><span class="status">7</span></div><div class="source-row"><span>RIA Novosti</span><span class="status">30</span></div></div>
+  </section>
+
+  <section>
+    <h2>Рыночная волатильность — базовые индексы и валюты</h2>
+    <p style="margin:0 0 10px;color:var(--ink-soft);font-size:.9rem">Намеренно широко и неглубоко — 5 базовых тикеров, дневное изменение, не торговая панель.</p>
+    <div class="panel sources"><div class="source-row"><span>S&P 500</span><span class="status">7585.73 (-0.45%)</span></div><div class="source-row"><span>VIX (индекс страха)</span><span class="status">17.20 (+0.58%)</span></div><div class="source-row"><span>MOEX Russia</span><span class="status">2222.51 (-0.19%)</span></div><div class="source-row"><span>USD/RUB</span><span class="status">84.21 (+2.89%)</span></div><div class="source-row"><span>EUR/USD</span><span class="status">1.15 (-0.08%)</span></div></div>
+  </section>
+
+  <section>
+    <h2>История для сравнения (1 запусков накоплено)</h2>
+    <div class="panel sources"><div class="source-row"><span>2026-09-16T00:55</span><span class="status">Луна: Растущий серп · Kp: 3.33 · Индекс: 26.7 · событий: 35 · землетр.: 8 · новостей: 48</span></div></div>
+    <p style="margin:10px 0 0;color:var(--ink-soft);font-size:.82rem">Каждый запуск build.py дописывает одну строку в data/history.jsonl — луна/Kp/индекс/число событий/новостей на момент запуска. Реальная корреляция (не просто «на глаз») станет возможна, когда строк накопится достаточно — для этого build.py нужно гонять регулярно, а не разово.</p>
+  </section>
+
+  <section>
+    <h2>Источники</h2>
+    <div class="panel sources">
+      <div class="source-row"><a href="https://eonet.gsfc.nasa.gov" target="_blank" rel="noopener">NASA EONET</a><span class="status">природные события · без ключа</span></div>
+      <div class="source-row"><a href="https://earthquake.usgs.gov" target="_blank" rel="noopener">USGS Earthquake Hazards</a><span class="status">значимые землетрясения · без ключа</span></div>
+      <div class="source-row"><span>BBC / Google News / Al Jazeera / RIA Novosti</span><span class="status">RSS, частота публикаций · без ключа</span></div>
+      <div class="source-row"><span>Yahoo Finance chart API</span><span class="status">S&amp;P 500, VIX, MOEX, USD/RUB, EUR/USD · без ключа, нужен браузерный User-Agent</span></div>
+    </div>
+  </section>
+
+  <footer>Дизайн вдохновлён sungeo.net (Earth Core ring gauge).</footer>
+</div>
+</body>
+</html>

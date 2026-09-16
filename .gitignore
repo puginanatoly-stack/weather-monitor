@@ -2,5 +2,6 @@
 # docstrings for why: this would leak the query city and usage timing.
 data/
 *.html
+!demo/*.html
 __pycache__/
 *.pyc
