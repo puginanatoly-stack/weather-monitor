@@ -12,7 +12,8 @@ One dashboard that answers a single question — **"is today calm, or not?"** �
 ![Now tab](assets/tab-now.png)
 
 ## What it does
-
+![Dashboard — overview tab](assets/screenshot-overview.png)
+![Space weather tab](assets/screenshot-space.png)
 Every day (GitHub Actions, once a day) it pulls from ten free/keyless APIs, computes one weighted **activity index**, renders a 4-tab static site, and — if anything crossed a threshold — pings Telegram:
 
 - **Weather** — OpenWeatherMap (current + forecast)
